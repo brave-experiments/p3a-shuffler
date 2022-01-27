@@ -1,6 +1,9 @@
 .PHONY: all test lint eif shuffler clean
 
-all: test lint shuffler
+enclave_cid = 5
+binary = shuffler
+
+all: test $(binary)
 
 test:
 	go test -cover ./...
@@ -9,22 +12,22 @@ lint:
 	golangci-lint run -E gofmt -E golint --exclude-use-default=false
 
 image:
-	$(eval IMAGE=$(shell ko publish --local . 2>/dev/null))
-	@echo "Built image URI: $(IMAGE)."
-	$(eval DIGEST=$(shell echo $(IMAGE) | cut -d ':' -f 2))
-	@echo "SHA-256 digest: $(DIGEST)"
+	$(eval image=$(shell ko publish --local . 2>/dev/null))
+	@echo "Built image URI: $(image)."
+	$(eval digest=$(shell echo $(image) | cut -d ':' -f 2))
+	@echo "SHA-256 digest: $(digest)"
 
 eif: image
-	nitro-cli build-enclave --docker-uri $(IMAGE) --output-file ko.eif
-	$(eval ENCLAVE_ID=$(shell nitro-cli describe-enclaves | jq -r '.[0].EnclaveID'))
-	@if [ "$(ENCLAVE_ID)" != "null" ]; then nitro-cli terminate-enclave --enclave-id $(ENCLAVE_ID); fi
+	nitro-cli build-enclave --docker-uri $(image) --output-file ko.eif
+	$(eval enclave_id=$(shell nitro-cli describe-enclaves | jq -r "if .[].EnclaveCID == $(enclave_cid) then .[].EnclaveID else \"\" end"))
+	@if [ "$(enclave_id)" != "" ]; then nitro-cli terminate-enclave --enclave-id $(enclave_id); fi
 	@echo "Starting enclave."
-	nitro-cli run-enclave --cpu-count 2 --memory 2500 --enclave-cid 4 --eif-path ko.eif --debug-mode
-	@echo "Showing enclave logs."
-	nitro-cli console --enclave-id $$(nitro-cli describe-enclaves | jq -r '.[0].EnclaveID')
+	nitro-cli run-enclave --cpu-count 2 --memory 2500 --enclave-cid $(enclave_cid) --eif-path ko.eif --debug-mode
+	nitro-cli console --enclave-id \
+		$$(nitro-cli describe-enclaves | jq -r "if .[].EnclaveCID == $(enclave_cid) then .[].EnclaveID else \"\" end")
 
-shuffler:
-	go build -o shuffler .
+$(binary):
+	go build -o $(binary) .
 
 clean:
-	rm shuffler
+	rm $(binary)
