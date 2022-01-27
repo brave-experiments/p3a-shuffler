@@ -1,9 +1,9 @@
 .PHONY: all test lint eif shuffler clean
 
 enclave_cid = 5
-binary = shuffler
+binary = p3a-shuffler
 
-all: test $(binary)
+all: test lint $(binary)
 
 test:
 	go test -cover ./...

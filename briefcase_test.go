@@ -5,13 +5,25 @@ import (
 	"testing"
 )
 
+type DummyReport struct {
+	crowdID CrowdID
+	payload []byte
+}
+
+func (d DummyReport) CrowdID() CrowdID {
+	return d.crowdID
+}
+func (d DummyReport) Payload() []byte {
+	return d.payload
+}
+
 func getFullBriefcase(reports, crowdIDs int) *Briefcase {
 	b := NewBriefcase()
 
 	for i := 0; i < reports; i++ {
-		b.Add(&Report{
-			CrowdID: CrowdID(fmt.Sprintf("%d", i%crowdIDs)),
-			Payload: []byte("foo"),
+		b.Add(&DummyReport{
+			crowdID: CrowdID(fmt.Sprintf("%d", i%crowdIDs)),
+			payload: []byte("foo"),
 		})
 	}
 	return b
@@ -42,8 +54,8 @@ func TestDumpFewerThan(t *testing.T) {
 	b := getFullBriefcase(numReports, numCrowdIDs)
 
 	// Add two reports that are part of the same crowd ID.
-	b.Add(&Report{CrowdID: CrowdID("foo"), Payload: []byte("bar")})
-	b.Add(&Report{CrowdID: CrowdID("foo"), Payload: []byte("bar")})
+	b.Add(&DummyReport{crowdID: CrowdID("foo"), payload: []byte("bar")})
+	b.Add(&DummyReport{crowdID: CrowdID("foo"), payload: []byte("bar")})
 	numReports += 2
 	numCrowdIDs++
 
@@ -63,15 +75,20 @@ func TestDumpFewerThan(t *testing.T) {
 	checkLengths(t, b, numReports, numCrowdIDs)
 }
 
-func TestShuffle(t *testing.T) {
+func TestShuffleAndEmpty(t *testing.T) {
 	numReports, numCrowdIDs := 100, 2
 	b := getFullBriefcase(numReports, numCrowdIDs)
 
-	reports1, err := b.Shuffle()
+	reports1, err := b.ShuffleAndEmpty()
 	if err != nil {
 		t.Fatalf("Failed to shuffle reports: %v", err)
 	}
-	reports2, err := b.Shuffle()
+	if b.NumCrowdIDs() != 0 {
+		t.Fatalf("Failed to empty the briefcase after shuffling.")
+	}
+
+	b = getFullBriefcase(numReports, numCrowdIDs)
+	reports2, err := b.ShuffleAndEmpty()
 	if err != nil {
 		t.Fatalf("Failed to shuffle reports: %v", err)
 	}

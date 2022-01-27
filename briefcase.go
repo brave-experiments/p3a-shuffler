@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/rand"
+	"log"
 	"math/big"
 	"sync"
 )
@@ -9,22 +10,26 @@ import (
 // Briefcase contains reports.  Obviously!
 type Briefcase struct {
 	sync.Mutex
-	Reports map[CrowdID][]*Report
+	Reports map[CrowdID][]Report
 }
 
+// NewBriefcase creates and returns a new briefcase.
 func NewBriefcase() *Briefcase {
 	return &Briefcase{
-		Reports: make(map[CrowdID][]*Report),
+		Reports: make(map[CrowdID][]Report),
 	}
 }
 
+// Empty empties the briefcase.
 func (b *Briefcase) Empty() {
 	b.Lock()
 	defer b.Unlock()
 
-	b.Reports = make(map[CrowdID][]*Report)
+	b.Reports = make(map[CrowdID][]Report)
 }
 
+// NumCrowdIDs returns the number of crowd IDs that the briefcase currently
+// contains.
 func (b *Briefcase) NumCrowdIDs() int {
 	b.Lock()
 	defer b.Unlock()
@@ -32,6 +37,8 @@ func (b *Briefcase) NumCrowdIDs() int {
 	return len(b.Reports)
 }
 
+// NumReports returns the number of reports that the briefcase currently
+// contains.  For every crowd ID, there is at least one report.
 func (b *Briefcase) NumReports() int {
 	b.Lock()
 	defer b.Unlock()
@@ -43,12 +50,12 @@ func (b *Briefcase) NumReports() int {
 	return num
 }
 
-// Shuffle gives the briefcase a good shuffle.
-func (b *Briefcase) Shuffle() ([]*Report, error) {
+// ShuffleAndEmpty gives the briefcase a good shuffle and subsequently empties it.
+func (b *Briefcase) ShuffleAndEmpty() ([]Report, error) {
 	b.Lock()
 	defer b.Unlock()
 
-	result := []*Report{}
+	result := []Report{}
 	for _, reports := range b.Reports {
 		result = append(result, reports...)
 	}
@@ -62,6 +69,8 @@ func (b *Briefcase) Shuffle() ([]*Report, error) {
 		j := int(index.Int64())
 		result[i], result[j] = result[j], result[i]
 	}
+	log.Printf("Briefcase: Shuffled briefcase containing %d crowd IDs.", len(b.Reports))
+	b.Reports = make(map[CrowdID][]Report)
 
 	return result, nil
 }
@@ -73,24 +82,28 @@ func (b *Briefcase) DumpFewerThan(min int) {
 	b.Lock()
 	defer b.Unlock()
 
+	numDumped := 0
 	for crowdID, reports := range b.Reports {
 		// We don't have the minimum number of reports for the given crowd ID.
 		// Discard all the reports.
 		if len(reports) < min {
 			delete(b.Reports, crowdID)
+			numDumped++
 		}
 	}
+	log.Printf("Briefcase: Dumped %d crowd IDs for which we had fewer than %d reports.", numDumped, min)
 }
 
 // Add adds a new report to the briefcase.
-func (b *Briefcase) Add(r *Report) {
+func (b *Briefcase) Add(r Report) {
 	b.Lock()
 	defer b.Unlock()
 
-	reports, exists := b.Reports[r.CrowdID]
+	reports, exists := b.Reports[r.CrowdID()]
 	if !exists {
-		b.Reports[r.CrowdID] = []*Report{r}
+		b.Reports[r.CrowdID()] = []Report{r}
 	} else {
-		b.Reports[r.CrowdID] = append(reports, r)
+		b.Reports[r.CrowdID()] = append(reports, r)
 	}
+	log.Printf("Briefcase: Added new report with crowd ID %s to briefcase.", r.CrowdID())
 }

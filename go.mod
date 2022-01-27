@@ -2,7 +2,7 @@ module github.com/brave-experiments/p3a-shuffler
 
 go 1.17
 
-require github.com/brave-experiments/nitro-enclave-utils v0.0.0-20211215180504-eb5799599b9f
+require github.com/brave-experiments/nitro-enclave-utils v0.0.0-20220125220248-1ea920cb44a0
 
 require (
 	github.com/docker/libcontainer v2.2.1+incompatible // indirect
