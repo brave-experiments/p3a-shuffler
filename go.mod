@@ -2,11 +2,11 @@ module github.com/brave-experiments/p3a-shuffler
 
 go 1.17
 
-require github.com/brave-experiments/nitro-enclave-utils v0.0.0-20220125220248-1ea920cb44a0
+require github.com/brave-experiments/nitro-enclave-utils v0.0.0-20220127230945-a4c2161b2fb8
 
 require (
 	github.com/docker/libcontainer v2.2.1+incompatible // indirect
-	github.com/fxamacker/cbor/v2 v2.3.0 // indirect
+	github.com/fxamacker/cbor/v2 v2.4.0 // indirect
 	github.com/go-chi/chi/v5 v5.0.7 // indirect
 	github.com/hf/nsm v0.0.0-20211106132757-1ae65a6a69ae // indirect
 	github.com/mdlayher/vsock v0.0.0-20210303205602-10d591861736 // indirect
@@ -15,5 +15,5 @@ require (
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9 // indirect
 	golang.org/x/net v0.0.0-20201021035429-f5854403a974 // indirect
 	golang.org/x/sys v0.0.0-20211209171907-798191bca915 // indirect
-	golang.org/x/text v0.3.6 // indirect
+	golang.org/x/text v0.3.7 // indirect
 )
