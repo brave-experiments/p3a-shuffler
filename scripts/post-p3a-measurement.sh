@@ -1,6 +1,6 @@
 #!/bin/bash
 
-endpoint="https://nitro.nymity.ch:8080/report"
+endpoint="https://nitro.nymity.ch:8080/reports"
 
 read -r -d '' prefix <<- EOM
 [
