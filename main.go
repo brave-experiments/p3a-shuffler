@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	// This module must be imported first because of its side effects of
+	// seeding our system entropy pool.
 	_ "github.com/brave-experiments/nitro-enclave-utils/randseed"
 
 	nitro "github.com/brave-experiments/nitro-enclave-utils"
