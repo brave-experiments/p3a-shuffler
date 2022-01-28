@@ -57,7 +57,7 @@ func (s *Shuffler) Start() {
 				if s.briefcase.NumCrowdIDs() == 0 {
 					break
 				}
-				s.briefcase.DumpFewerThan(10)
+				s.briefcase.DumpFewerThan(anonymityThreshold)
 				reports, err := s.briefcase.ShuffleAndEmpty()
 				if err != nil {
 					log.Printf("Shuffler: Briefcase failed to shuffle: %s", err)

@@ -12,10 +12,11 @@ import (
 )
 
 const (
-	analyzerURL      = "https://example.com"
-	p3aEndpoint      = "/reports"
-	shufflerEndpoint = "/encrypted-reports"
-	socksProxy       = "127.0.0.1:1080"
+	analyzerURL        = "https://example.com"
+	p3aEndpoint        = "/reports"
+	shufflerEndpoint   = "/encrypted-reports"
+	socksProxy         = "127.0.0.1:1080"
+	anonymityThreshold = 10
 )
 
 var (
