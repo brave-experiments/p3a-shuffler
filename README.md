@@ -12,6 +12,23 @@ takes as input
 discards measurements that are not shared by at least k other clients, and
 periodically forwards them to the backend.
 
+Data flow
+---------
+
+The Web API receives incoming requests and forwards them to the shuffler.  The
+shuffler uses a briefcase to store requests, remove requests that don't satisfy
+our k-anonymity protections, and periodically hands them over to the forwarder,
+which forwards remaining requests to our backend.
+
+    ┌────────┐  ┌──────────┐  ┌──────────┐
+    │ WebAPI │─▶│ Shuffler │─▶│ Forwarder│
+    └────────┘  └──────────┘  └──────────┘
+                     │
+                     ▼
+               ┌───────────┐
+               │ Briefcase │
+               └───────────┘
+
 Input
 -----
 
