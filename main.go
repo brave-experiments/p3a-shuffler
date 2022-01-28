@@ -20,7 +20,7 @@ const (
 )
 
 var (
-	batchPeriod = time.Minute * 1
+	batchPeriod = time.Hour * 24
 )
 
 func main() {
