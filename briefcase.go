@@ -94,16 +94,18 @@ func (b *Briefcase) DumpFewerThan(min int) {
 	log.Printf("Briefcase: Dumped %d crowd IDs for which we had fewer than %d reports.", numDumped, min)
 }
 
-// Add adds a new report to the briefcase.
-func (b *Briefcase) Add(r Report) {
+// Add adds new reports to the briefcase.
+func (b *Briefcase) Add(rs []Report) {
 	b.Lock()
 	defer b.Unlock()
 
-	reports, exists := b.Reports[r.CrowdID()]
-	if !exists {
-		b.Reports[r.CrowdID()] = []Report{r}
-	} else {
-		b.Reports[r.CrowdID()] = append(reports, r)
+	for _, r := range rs {
+		reports, exists := b.Reports[r.CrowdID()]
+		if !exists {
+			b.Reports[r.CrowdID()] = []Report{r}
+		} else {
+			b.Reports[r.CrowdID()] = append(reports, r)
+		}
 	}
-	log.Printf("Briefcase: Added new report with crowd ID %s to briefcase.", r.CrowdID())
+	log.Printf("Briefcase: Added batch consisting of %d reports to briefcase.", len(rs))
 }

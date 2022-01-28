@@ -3,23 +3,25 @@
 endpoint="https://nitro.nymity.ch:8080/report"
 
 read -r -d '' prefix <<- EOM
-{
-  "channel":"developer",
-  "country_code":"
+[
+  {
+    "channel":"developer",
+    "country_code":"
 EOM
 
 read -r -d '' suffix<<- EOM
-  ",
-  "metric_name":"Brave.Welcome.InteractionStatus",
-  "metric_value":3,
-  "platform":"linux-bc",
-  "refcode":"none",
-  "version":"1.36.68",
-  "woi":4,
-  "wos":4,
-  "yoi":2022,
-  "yos":2022
-}
+    ",
+    "metric_name":"Brave.Welcome.InteractionStatus",
+    "metric_value":3,
+    "platform":"linux-bc",
+    "refcode":"none",
+    "version":"1.36.68",
+    "woi":4,
+    "wos":4,
+    "yoi":2022,
+    "yos":2022
+  }
+]
 EOM
 
 function send_request() {

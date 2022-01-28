@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
+	"log"
+	"os"
 	"testing"
 )
 
@@ -17,13 +20,20 @@ func (d DummyReport) Payload() []byte {
 	return d.payload
 }
 
+func TestMain(m *testing.M) {
+	log.SetOutput(ioutil.Discard)
+	os.Exit(m.Run())
+}
+
 func getFullBriefcase(reports, crowdIDs int) *Briefcase {
 	b := NewBriefcase()
 
 	for i := 0; i < reports; i++ {
-		b.Add(&DummyReport{
-			crowdID: CrowdID(fmt.Sprintf("%d", i%crowdIDs)),
-			payload: []byte("foo"),
+		b.Add([]Report{
+			&DummyReport{
+				crowdID: CrowdID(fmt.Sprintf("%d", i%crowdIDs)),
+				payload: []byte("foo"),
+			},
 		})
 	}
 	return b
@@ -54,8 +64,8 @@ func TestDumpFewerThan(t *testing.T) {
 	b := getFullBriefcase(numReports, numCrowdIDs)
 
 	// Add two reports that are part of the same crowd ID.
-	b.Add(&DummyReport{crowdID: CrowdID("foo"), payload: []byte("bar")})
-	b.Add(&DummyReport{crowdID: CrowdID("foo"), payload: []byte("bar")})
+	b.Add([]Report{&DummyReport{crowdID: CrowdID("foo"), payload: []byte("bar")}})
+	b.Add([]Report{&DummyReport{crowdID: CrowdID("foo"), payload: []byte("bar")}})
 	numReports += 2
 	numCrowdIDs++
 

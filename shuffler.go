@@ -21,7 +21,7 @@ type Report interface {
 // batching.
 type Shuffler struct {
 	sync.WaitGroup
-	inbox       chan Report
+	inbox       chan []Report
 	outbox      chan []Report
 	done        chan bool
 	BatchPeriod time.Duration
@@ -32,7 +32,7 @@ type Shuffler struct {
 // batch period.
 func NewShuffler(batchPeriod time.Duration) *Shuffler {
 	return &Shuffler{
-		inbox:       make(chan Report),
+		inbox:       make(chan []Report),
 		outbox:      make(chan []Report),
 		done:        make(chan bool),
 		BatchPeriod: batchPeriod,

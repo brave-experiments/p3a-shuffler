@@ -65,24 +65,30 @@ func (m P3AMessage) Payload() []byte {
 
 // createP3AHandler creates a handler that receives a set of JSON-encoded P3A
 // messages.
-func createP3AHandler(inbox chan Report) http.HandlerFunc {
+func createP3AHandler(inbox chan []Report) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var m P3AMessage
+		var ms []P3AMessage
 
-		err := json.NewDecoder(r.Body).Decode(&m)
+		err := json.NewDecoder(r.Body).Decode(&ms)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		inbox <- m
-		log.Printf("WebAPI: Sent new P3A message %s to shuffler's inbox.", m.CrowdID())
+
+		rs := []Report{}
+		for _, m := range ms {
+			rs = append(rs, m)
+		}
+
+		inbox <- rs
+		log.Printf("WebAPI: Sent %d P3A message to shuffler.", len(ms))
 	}
 }
 
 // createShufflerHandler creates a handler that receives an encrypted blob
 // that, when encrypted, contains a JSON-encoded structure consisting of a
 // crowd ID and an encrypted payload that is opaque to the shuffler.
-func createShufflerHandler(inbox chan Report) http.HandlerFunc {
+func createShufflerHandler(inbox chan []Report) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// TODO: Decrypt report and forward it to the shuffler's inbox.
 	}
