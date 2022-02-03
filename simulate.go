@@ -3,19 +3,23 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"path"
 	"regexp"
+	"strings"
 	"sync"
 	"time"
 )
 
+const (
+	waitAfterAdd = time.Millisecond * 100
+)
+
 var (
-	re           = regexp.MustCompile(`'({[^']+})'`)
-	errEmptyFile = errors.New("file contains no P3A measurement")
+	re = regexp.MustCompile(`'({[^']+})'`)
 )
 
 type simulationConfig struct {
@@ -37,21 +41,31 @@ func parseJSONFile(filename string) ([]Report, error) {
 		return nil, err
 	}
 
-	// Extract JSON string from blob.
-	measurements := re.FindStringSubmatch(string(content))
-	if len(measurements) == 0 {
-		return nil, errEmptyFile
-	}
-	if len(measurements) != 2 {
-		return nil, errors.New("unexpected number of measurements")
-	}
+	var ms []Report
+	for _, line := range strings.Split(string(content), "\n") {
+		// This is (probably) the file's trailing newline but we continue, just
+		// in case.
+		if line == "" {
+			continue
+		}
 
-	var m P3AMeasurement
-	buf := bytes.NewBufferString(measurements[1])
-	if err = json.NewDecoder(buf).Decode(&m); err != nil {
-		return nil, err
+		// Extract P3A measurement from the current line.
+		measurements := re.FindStringSubmatch(line)
+		if len(measurements) == 0 {
+			continue
+		}
+		if len(measurements) != 2 {
+			return nil, fmt.Errorf("line does not contain exactly one measurement: %s", line)
+		}
+
+		var m P3AMeasurement
+		buf := bytes.NewBufferString(measurements[1])
+		if err = json.NewDecoder(buf).Decode(&m); err != nil {
+			return nil, err
+		}
+		ms = append(ms, m)
 	}
-	return []Report{m}, nil
+	return ms, nil
 }
 
 // parseDir parses all P3A measurements from the files that can be found in the
@@ -63,9 +77,6 @@ func parseDir(dir string, shufflerInbox chan []Report) error {
 	}
 	for _, file := range fileInfo {
 		rs, err := parseJSONFile(path.Join(dir, file.Name()))
-		if err == errEmptyFile {
-			continue
-		}
 		if err != nil {
 			return err
 		}
@@ -81,7 +92,10 @@ func simulationMode(cfg *simulationConfig) {
 	if err := parseDir(cfg.DataDir, s.inbox); err != nil {
 		log.Fatalf("Failed to load P3A reports from directory: %s", err)
 	}
-	log.Printf("Simulate: %s", s)
+	// Give the shuffler a little bit of time to add pending reports before we
+	// proceed.  It's not pretty but it will do for now.
+	time.Sleep(waitAfterAdd)
+	fmt.Printf("Simulate: Before batch period: %s\n", s)
 
 	var rs []Report
 	var wg sync.WaitGroup
@@ -99,7 +113,7 @@ func simulationMode(cfg *simulationConfig) {
 	wg.Wait()
 
 	s.inbox <- rs
-	// Give the shuffler a second to add the reports to the briefcase.
-	time.Sleep(time.Second)
-	log.Printf("Simulate: %s", s)
+	// Same as above.
+	time.Sleep(waitAfterAdd)
+	fmt.Printf("Simulate: After batch period: %s\n", s)
 }
