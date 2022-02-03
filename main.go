@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"net"
 	"net/http"
@@ -25,8 +26,8 @@ var (
 	batchPeriod = time.Hour * 24
 )
 
-func main() {
-	shuffler := NewShuffler(batchPeriod)
+func deploymentMode() {
+	shuffler := NewShuffler(batchPeriod, anonymityThreshold)
 	shuffler.Start()
 	defer shuffler.Stop()
 	log.Printf("Main: Started shuffler with batch period of %s.", batchPeriod)
@@ -62,5 +63,24 @@ func main() {
 	enclave.AddRoute(http.MethodPost, shufflerEndpoint, createShufflerHandler(shuffler.inbox))
 	if err := enclave.Start(); err != nil {
 		log.Fatalf("Main: Enclave terminated: %v", err)
+	}
+}
+
+func main() {
+	simulate := flag.Bool("simulate", false, "Use simulation mode instead of deployment mode.")
+	dataDir := flag.String("datadir", "", "Directory pointing to local P3A measurements, as stored in the S3 bucket.")
+	threshold := flag.Int("threshold", 10, "K-anonymity threshold.")
+	flag.Parse()
+
+	// Are we supposed to use simulation mode or deployment mode?  In
+	// simulation mode, we don't take as input actual data; we only operate on
+	// offline data and crunch some numbers.
+	if *simulate {
+		simulationMode(&simulationConfig{
+			DataDir:            *dataDir,
+			AnonymityThreshold: *threshold,
+		})
+	} else {
+		deploymentMode()
 	}
 }
