@@ -13,7 +13,7 @@ type DummyReport struct {
 	payload []byte
 }
 
-func (d DummyReport) CrowdID() CrowdID {
+func (d DummyReport) CrowdID(method int) CrowdID {
 	return d.crowdID
 }
 func (d DummyReport) Payload() []byte {
@@ -26,7 +26,7 @@ func TestMain(m *testing.M) {
 }
 
 func getFullBriefcase(reports, crowdIDs int) *Briefcase {
-	b := NewBriefcase()
+	b := NewBriefcase(defaultCrowdIDMethod)
 
 	for i := 0; i < reports; i++ {
 		b.Add([]Report{

@@ -5,6 +5,11 @@ import (
 	"fmt"
 )
 
+const (
+	methodOriginSHA1 = iota
+	methodFullSHA1
+)
+
 // ShufflerMeasurement represents an encrypted measurement for the shuffler.
 type ShufflerMeasurement struct {
 	Encrypted []byte `json:"encrypted"`
@@ -49,11 +54,22 @@ func (m P3AMeasurement) String() string {
 		m.Channel, m.RefCode)
 }
 
-// CrowdID returns the crowd ID (a SHA-1 over the measurement) of the P3A
-// measurement.
-func (m P3AMeasurement) CrowdID() CrowdID {
-	hash := fmt.Sprintf("%x", sha1.Sum(m.Payload()))
-	return CrowdID(hash)
+// CrowdID returns the crowd ID of the P3A measurement.
+func (m P3AMeasurement) CrowdID(method int) CrowdID {
+	if method == methodFullSHA1 {
+		// SHA-1 over all fields.
+		hash := fmt.Sprintf("%x", sha1.Sum(m.Payload()))
+		return CrowdID(hash)
+	} else if method == methodOriginSHA1 {
+		// SHA-1 over all fields *except* the metric value and metric hash.
+		payload := fmt.Sprintf("%d%d%d%d%s%s%s%s%s",
+			m.YearOfSurvey, m.YearOfInstall, m.WeekOfSurvey, m.WeekOfInstall,
+			m.CountryCode, m.Platform, m.Version, m.Channel, m.RefCode)
+		hash := fmt.Sprintf("%x", sha1.Sum([]byte(payload)))
+		return CrowdID(hash)
+	} else {
+		return CrowdID("")
+	}
 }
 
 // Payload returns the P3A measurement's payload.

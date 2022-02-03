@@ -14,7 +14,7 @@ type CrowdID string
 // report must be able to return its crowd ID and payload; and it must be
 // marshal-able.
 type Report interface {
-	CrowdID() CrowdID
+	CrowdID(method int) CrowdID
 	Payload() []byte
 }
 
@@ -32,14 +32,14 @@ type Shuffler struct {
 
 // NewShuffler returns a new shuffler that batches reports until the given
 // batch period.
-func NewShuffler(batchPeriod time.Duration, anonymityThreshold int) *Shuffler {
+func NewShuffler(batchPeriod time.Duration, anonymityThreshold int, crowdIDMethod int) *Shuffler {
 	return &Shuffler{
 		inbox:              make(chan []Report),
 		outbox:             make(chan []Report),
 		done:               make(chan bool),
 		anonymityThreshold: anonymityThreshold,
 		BatchPeriod:        batchPeriod,
-		briefcase:          NewBriefcase(),
+		briefcase:          NewBriefcase(crowdIDMethod),
 	}
 }
 

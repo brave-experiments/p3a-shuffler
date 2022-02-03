@@ -15,11 +15,12 @@ import (
 )
 
 const (
-	analyzerURL        = "https://example.com"
-	p3aEndpoint        = "/reports"
-	shufflerEndpoint   = "/encrypted-reports"
-	socksProxy         = "127.0.0.1:1080"
-	anonymityThreshold = 10
+	analyzerURL          = "https://example.com"
+	p3aEndpoint          = "/reports"
+	shufflerEndpoint     = "/encrypted-reports"
+	socksProxy           = "127.0.0.1:1080"
+	anonymityThreshold   = 10
+	defaultCrowdIDMethod = methodOriginSHA1
 )
 
 var (
@@ -27,7 +28,7 @@ var (
 )
 
 func deploymentMode() {
-	shuffler := NewShuffler(batchPeriod, anonymityThreshold)
+	shuffler := NewShuffler(batchPeriod, anonymityThreshold, defaultCrowdIDMethod)
 	shuffler.Start()
 	defer shuffler.Stop()
 	log.Printf("Main: Started shuffler with batch period of %s.", batchPeriod)
@@ -70,6 +71,7 @@ func main() {
 	simulate := flag.Bool("simulate", false, "Use simulation mode instead of deployment mode.")
 	dataDir := flag.String("datadir", "", "Directory pointing to local P3A measurements, as stored in the S3 bucket.")
 	threshold := flag.Int("threshold", 10, "K-anonymity threshold.")
+	crowdIDMethod := flag.Int("crowdid", 0, "Crowd ID method.")
 	flag.Parse()
 
 	// Are we supposed to use simulation mode or deployment mode?  In
@@ -79,6 +81,7 @@ func main() {
 		simulationMode(&simulationConfig{
 			DataDir:            *dataDir,
 			AnonymityThreshold: *threshold,
+			CrowdIDMethod:      *crowdIDMethod,
 		})
 	} else {
 		deploymentMode()

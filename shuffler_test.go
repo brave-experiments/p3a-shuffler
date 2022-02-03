@@ -15,7 +15,7 @@ func BenchmarkRealWorldData(b *testing.B) {
 		return
 	}
 
-	s := NewShuffler(time.Hour, anonymityThreshold)
+	s := NewShuffler(time.Hour, anonymityThreshold, defaultCrowdIDMethod)
 	s.Start()
 
 	for n := 0; n < b.N; n++ {

@@ -21,6 +21,7 @@ var (
 type simulationConfig struct {
 	DataDir            string
 	AnonymityThreshold int
+	CrowdIDMethod      int
 }
 
 // parseJSONFile reads and parses a P3A measurement file as it can be found in
@@ -74,7 +75,7 @@ func parseDir(dir string, shufflerInbox chan []Report) error {
 }
 
 func simulationMode(cfg *simulationConfig) {
-	s := NewShuffler(batchPeriod, cfg.AnonymityThreshold)
+	s := NewShuffler(batchPeriod, cfg.AnonymityThreshold, cfg.CrowdIDMethod)
 	s.Start()
 
 	if err := parseDir(cfg.DataDir, s.inbox); err != nil {

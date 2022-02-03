@@ -10,13 +10,15 @@ import (
 // Briefcase contains reports.  Obviously!
 type Briefcase struct {
 	sync.Mutex
-	Reports map[CrowdID][]Report
+	crowdIDMethod int
+	Reports       map[CrowdID][]Report
 }
 
 // NewBriefcase creates and returns a new briefcase.
-func NewBriefcase() *Briefcase {
+func NewBriefcase(crowdIDMethod int) *Briefcase {
 	return &Briefcase{
-		Reports: make(map[CrowdID][]Report),
+		Reports:       make(map[CrowdID][]Report),
+		crowdIDMethod: crowdIDMethod,
 	}
 }
 
@@ -100,11 +102,11 @@ func (b *Briefcase) Add(rs []Report) {
 	defer b.Unlock()
 
 	for _, r := range rs {
-		reports, exists := b.Reports[r.CrowdID()]
+		reports, exists := b.Reports[r.CrowdID(b.crowdIDMethod)]
 		if !exists {
-			b.Reports[r.CrowdID()] = []Report{r}
+			b.Reports[r.CrowdID(b.crowdIDMethod)] = []Report{r}
 		} else {
-			b.Reports[r.CrowdID()] = append(reports, r)
+			b.Reports[r.CrowdID(b.crowdIDMethod)] = append(reports, r)
 		}
 	}
 	log.Printf("Briefcase: Added batch consisting of %d reports to briefcase.", len(rs))
