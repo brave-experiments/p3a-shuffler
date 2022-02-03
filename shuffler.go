@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -38,6 +39,13 @@ func NewShuffler(batchPeriod time.Duration) *Shuffler {
 		BatchPeriod: batchPeriod,
 		briefcase:   NewBriefcase(),
 	}
+}
+
+// String returns a summary of the shuffler's internal state.
+func (s *Shuffler) String() string {
+	return fmt.Sprintf("Briefcase contains %d crowd IDs; %d reports.",
+		s.briefcase.NumCrowdIDs(),
+		s.briefcase.NumReports())
 }
 
 // Start starts the shuffler.
