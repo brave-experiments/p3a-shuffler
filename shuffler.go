@@ -61,8 +61,8 @@ func (s *Shuffler) Start() {
 			case <-s.done:
 				s.briefcase.Empty()
 				return
-			case r := <-s.inbox:
-				s.briefcase.Add(r)
+			case rs := <-s.inbox:
+				s.briefcase.Add(rs)
 			case <-ticker.C:
 				if err := s.endBatchPeriod(); err != nil {
 					log.Printf("Shuffler: failed to end batch period because: %s", err)
