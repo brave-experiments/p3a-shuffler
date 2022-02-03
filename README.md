@@ -60,3 +60,15 @@ Output
 
 The shuffler discards measurements that don't satisfy our k-anonymity
 thresholds and forwards remaining measurements periodically to its backend.
+
+Simulations
+-----------
+
+When given the `-simulate` flag, the shuffler ingests local data rather than
+waiting for data via its Web API.  This is useful to explore the
+privacy/utility trade-off of k-anonymity thresholds (use the `-threshold` flag)
+and crowd ID methods (use the `-crowdid` flag).  Use the `-datadir` flag to tell
+the shuffler where the data lies.  The given directory contains P3A measurements
+as they're stored in the S3 bucket.  Here's an example:
+
+    ./p3a-shuffler -simulate -crowdid 1 -threshold 10 -datadir /path/to/files/ 2>/dev/null
