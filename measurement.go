@@ -5,16 +5,16 @@ import (
 	"fmt"
 )
 
-// ShufflerMessage represents an encrypted message for the shuffler.
-type ShufflerMessage struct {
+// ShufflerMeasurement represents an encrypted measurement for the shuffler.
+type ShufflerMeasurement struct {
 	Encrypted []byte `json:"encrypted"`
 }
 
-// P3AMessage represents a P3A message as it's sent by Brave clients.  See
-// the browser code for how messages are created:
-// https://github.com/brave/brave-core/blob/1adaa0bc057a83f432e9c278c7c373ef60a5b766/components/p3a/p3a_message.cc#L70
-// P3AMessage also implements the Report interface.
-type P3AMessage struct {
+// P3AMeasurement represents a P3A measurement as it's sent by Brave clients.
+// See the browser code for how measurements are created:
+// https://github.com/brave/brave-core/blob/1adaa0bc057a83f432e9c278c7c373ef60a5b766/components/p3a/p3a_measurement.cc#L70
+// P3AMeasurement also implements the Report interface.
+type P3AMeasurement struct {
 	YearOfSurvey  int    `json:"yos"`
 	YearOfInstall int    `json:"yoi"`
 	WeekOfSurvey  int    `json:"wos"`
@@ -28,9 +28,9 @@ type P3AMessage struct {
 	RefCode       string `json:"refcode"`
 }
 
-// String returns a string representation of the P3A message.
-func (m P3AMessage) String() string {
-	return fmt.Sprintf("P3A message:\n"+
+// String returns a string representation of the P3A measurement.
+func (m P3AMeasurement) String() string {
+	return fmt.Sprintf("P3A measurement:\n"+
 		"\tYear of survey:  %d\n"+
 		"\tYear of install: %d\n"+
 		"\tWeek of survey:  %d\n"+
@@ -49,13 +49,14 @@ func (m P3AMessage) String() string {
 		m.Channel, m.RefCode)
 }
 
-// CrowdID returns the crowd ID (a SHA-1 over the message) of the P3A message.
-func (m P3AMessage) CrowdID() CrowdID {
+// CrowdID returns the crowd ID (a SHA-1 over the measurement) of the P3A
+// measurement.
+func (m P3AMeasurement) CrowdID() CrowdID {
 	hash := fmt.Sprintf("%x", sha1.Sum(m.Payload()))
 	return CrowdID(hash)
 }
 
-// Payload returns the P3A message's payload.
-func (m P3AMessage) Payload() []byte {
+// Payload returns the P3A measurement's payload.
+func (m P3AMeasurement) Payload() []byte {
 	return []byte(m.String())
 }

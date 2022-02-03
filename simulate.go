@@ -45,7 +45,7 @@ func parseJSONFile(filename string) ([]Report, error) {
 		return nil, errors.New("unexpected number of measurements")
 	}
 
-	var m P3AMessage
+	var m P3AMeasurement
 	buf := bytes.NewBufferString(measurements[1])
 	if err = json.NewDecoder(buf).Decode(&m); err != nil {
 		return nil, err
