@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"path"
 	"regexp"
@@ -90,13 +89,17 @@ func simulationMode(cfg *simulationConfig) {
 	s := NewShuffler(batchPeriod, cfg.AnonymityThreshold, cfg.CrowdIDMethod)
 	s.Start()
 
+	before := time.Now()
 	if err := parseDir(cfg.DataDir, s.inbox); err != nil {
-		log.Fatalf("Failed to load P3A reports from directory: %s", err)
+		elog.Fatalf("Failed to load P3A reports from directory: %s", err)
 	}
+	after := time.Now()
+	elog.Printf("Processed %d measurements in %s.", s.briefcase.NumReports(), after.Sub(before))
+
 	// Give the shuffler a little bit of time to add pending reports before we
 	// proceed.  It's not pretty but it will do for now.
 	time.Sleep(waitAfterAdd)
-	log.Printf("Simulate: Before batch period: %s\n", s)
+	elog.Printf("Before batch period: %s\n", s)
 
 	var rs []Report
 	var wg sync.WaitGroup
@@ -107,16 +110,16 @@ func simulationMode(cfg *simulationConfig) {
 			wg.Done()
 		}
 	}()
-	log.Printf("Simulate: Ending batch period using anonymity threshold of %d.", cfg.AnonymityThreshold)
+	elog.Printf("Ending batch period using anonymity threshold of %d.", cfg.AnonymityThreshold)
 	if err := s.endBatchPeriod(); err != nil {
-		log.Fatal(err)
+		elog.Fatal(err)
 	}
 	wg.Wait()
 
 	s.inbox <- rs
 	// Same as above.
 	time.Sleep(waitAfterAdd)
-	log.Printf("Simulate: After batch period: %s\n", s)
+	elog.Printf("After batch period: %s\n", s)
 	if cfg.CSVOutput {
 		fmt.Printf("%d,%d,%d,%d\n", cfg.CrowdIDMethod, cfg.AnonymityThreshold, s.briefcase.NumCrowdIDs(), s.briefcase.NumReports())
 	}

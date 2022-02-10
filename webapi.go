@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 )
 
@@ -24,7 +23,7 @@ func createP3AHandler(inbox chan []Report) http.HandlerFunc {
 		}
 
 		inbox <- rs
-		log.Printf("WebAPI: Sent %d P3A measurement to shuffler.", len(ms))
+		elog.Printf("Sent %d P3A measurement to shuffler.", len(ms))
 	}
 }
 

@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"sync"
 	"time"
 )
@@ -65,7 +64,7 @@ func (s *Shuffler) Start() {
 				s.briefcase.Add(rs)
 			case <-ticker.C:
 				if err := s.endBatchPeriod(); err != nil {
-					log.Printf("Shuffler: failed to end batch period because: %s", err)
+					elog.Printf("Failed to end batch period because: %s", err)
 				}
 			}
 		}
@@ -87,7 +86,7 @@ func (s *Shuffler) endBatchPeriod() error {
 		return err
 	}
 	s.outbox <- reports
-	log.Printf("Shuffler: Sent %d reports to outbox.", len(reports))
+	elog.Printf("Sent %d reports to outbox.", len(reports))
 	return nil
 }
 

@@ -2,7 +2,6 @@ package main
 
 import (
 	"crypto/rand"
-	"log"
 	"math/big"
 	"sync"
 )
@@ -71,7 +70,7 @@ func (b *Briefcase) ShuffleAndEmpty() ([]Report, error) {
 		j := int(index.Int64())
 		result[i], result[j] = result[j], result[i]
 	}
-	log.Printf("Briefcase: Shuffled briefcase containing %d crowd IDs.", len(b.Reports))
+	elog.Printf("Shuffled briefcase containing %d crowd IDs.", len(b.Reports))
 	b.Reports = make(map[CrowdID][]Report)
 
 	return result, nil
@@ -93,7 +92,7 @@ func (b *Briefcase) DumpFewerThan(min int) {
 			numDumped++
 		}
 	}
-	log.Printf("Briefcase: Dumped %d crowd IDs for which we had fewer than %d reports.", numDumped, min)
+	elog.Printf("Dumped %d crowd IDs for which we had fewer than %d reports.", numDumped, min)
 }
 
 // Add adds new reports to the briefcase.
@@ -109,5 +108,5 @@ func (b *Briefcase) Add(rs []Report) {
 			b.Reports[r.CrowdID(b.crowdIDMethod)] = append(reports, r)
 		}
 	}
-	log.Printf("Briefcase: Added batch consisting of %d reports to briefcase.", len(rs))
+	elog.Printf("Added batch consisting of %d reports to briefcase.", len(rs))
 }

@@ -6,7 +6,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"log"
 	"net/http"
 	"sync"
 )
@@ -39,7 +38,7 @@ func (f *Forwarder) Start() {
 			case <-f.done:
 				return
 			case reports := <-f.shuffler:
-				log.Printf("Forwarder: Received %d reports from shuffler.", len(reports))
+				elog.Printf("Received %d reports from shuffler.", len(reports))
 				go f.forward(reports)
 			}
 		}
@@ -55,7 +54,7 @@ func (f *Forwarder) Stop() {
 // forward forwards the given reports to the server.
 func (f *Forwarder) forward(reports []Report) {
 	if len(reports) == 0 {
-		log.Println("Forwarder: No reports given, so there's nothing to forward.")
+		elog.Println("No reports given, so there's nothing to forward.")
 		return
 	}
 
@@ -66,7 +65,7 @@ func (f *Forwarder) forward(reports []Report) {
 	batch := reportBatch{Batch: reports}
 	jsonBytes, err := json.Marshal(batch)
 	if err != nil {
-		log.Printf("Forwarder: Failed to marshal reports: %s", err)
+		elog.Printf("Failed to marshal reports: %s", err)
 		return
 	}
 
@@ -76,13 +75,13 @@ func (f *Forwarder) forward(reports []Report) {
 	r := bytes.NewReader(jsonBytes)
 	resp, err := http.Post(f.srvURL, "application/json", r)
 	if err != nil {
-		log.Printf("Forwarder: Failed to POST reports to server: %s", err)
+		elog.Printf("Failed to POST reports to server: %s", err)
 		return
 	}
 	if resp.StatusCode != http.StatusOK {
-		log.Printf("Forwarder: Received HTTP status code %d from server.", resp.StatusCode)
+		elog.Printf("Received HTTP status code %d from server.", resp.StatusCode)
 		return
 	}
 
-	log.Printf("Forwarder: Forwarded %d reports to server.", len(reports))
+	elog.Printf("Forwarded %d reports to server.", len(reports))
 }

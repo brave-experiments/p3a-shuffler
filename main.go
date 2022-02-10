@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"time"
 
 	// This module must be imported first because of its side effects of
@@ -25,31 +26,32 @@ const (
 
 var (
 	batchPeriod = time.Hour * 24
+	elog        = log.New(os.Stderr, "p3a-shuffler: ", log.Ldate|log.Ltime|log.LUTC|log.Lshortfile)
 )
 
 func deploymentMode() {
 	shuffler := NewShuffler(batchPeriod, anonymityThreshold, defaultCrowdIDMethod)
 	shuffler.Start()
 	defer shuffler.Stop()
-	log.Printf("Main: Started shuffler with batch period of %s.", batchPeriod)
+	elog.Printf("Started shuffler with batch period of %s.", batchPeriod)
 
 	forwarder := NewForwarder(shuffler.outbox, analyzerURL)
 	forwarder.Start()
 	defer forwarder.Stop()
-	log.Println("Main: Started forwarder.")
+	elog.Println("Started forwarder.")
 
 	proxyAddr, err := net.ResolveTCPAddr("tcp", socksProxy)
 	if err != nil {
-		log.Fatalf("Main: Failed to resolve TCP address for %s: %s", socksProxy, err)
+		elog.Fatalf("Failed to resolve TCP address for %s: %s", socksProxy, err)
 	}
 	vproxy, err := nitro.NewVProxy(proxyAddr, uint32(1080))
 	if err != nil {
-		log.Fatalf("Main: Failed to create VProxy: %s", err)
+		elog.Fatalf("Failed to create VProxy: %s", err)
 	}
 	ready := make(chan bool)
 	go vproxy.Start(ready)
 	<-ready
-	log.Println("Main: Started VProxy.")
+	elog.Println("Started VProxy.")
 
 	enclave := nitro.NewEnclave(
 		&nitro.Config{
@@ -63,7 +65,7 @@ func deploymentMode() {
 	enclave.AddRoute(http.MethodPost, p3aEndpoint, createP3AHandler(shuffler.inbox))
 	enclave.AddRoute(http.MethodPost, shufflerEndpoint, createShufflerHandler(shuffler.inbox))
 	if err := enclave.Start(); err != nil {
-		log.Fatalf("Main: Enclave terminated: %v", err)
+		elog.Fatalf("Enclave terminated: %v", err)
 	}
 }
 
