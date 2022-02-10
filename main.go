@@ -72,6 +72,7 @@ func main() {
 	dataDir := flag.String("datadir", "", "Directory pointing to local P3A measurements, as stored in the S3 bucket.")
 	threshold := flag.Int("threshold", 10, "K-anonymity threshold.")
 	crowdIDMethod := flag.Int("crowdid", 0, "Crowd ID method.")
+	csvOutput := flag.Bool("csv", false, "Print CSV-formatted output to stdout.")
 	flag.Parse()
 
 	// Are we supposed to use simulation mode or deployment mode?  In
@@ -82,6 +83,7 @@ func main() {
 			DataDir:            *dataDir,
 			AnonymityThreshold: *threshold,
 			CrowdIDMethod:      *crowdIDMethod,
+			CSVOutput:          *csvOutput,
 		})
 	} else {
 		deploymentMode()

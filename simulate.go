@@ -26,6 +26,7 @@ type simulationConfig struct {
 	DataDir            string
 	AnonymityThreshold int
 	CrowdIDMethod      int
+	CSVOutput          bool
 }
 
 // parseJSONFile reads and parses a P3A measurement file as it can be found in
@@ -95,7 +96,7 @@ func simulationMode(cfg *simulationConfig) {
 	// Give the shuffler a little bit of time to add pending reports before we
 	// proceed.  It's not pretty but it will do for now.
 	time.Sleep(waitAfterAdd)
-	fmt.Printf("Simulate: Before batch period: %s\n", s)
+	log.Printf("Simulate: Before batch period: %s\n", s)
 
 	var rs []Report
 	var wg sync.WaitGroup
@@ -115,5 +116,8 @@ func simulationMode(cfg *simulationConfig) {
 	s.inbox <- rs
 	// Same as above.
 	time.Sleep(waitAfterAdd)
-	fmt.Printf("Simulate: After batch period: %s\n", s)
+	log.Printf("Simulate: After batch period: %s\n", s)
+	if cfg.CSVOutput {
+		fmt.Printf("%d,%d,%d,%d\n", cfg.CrowdIDMethod, cfg.AnonymityThreshold, s.briefcase.NumCrowdIDs(), s.briefcase.NumReports())
+	}
 }
