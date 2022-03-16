@@ -108,5 +108,4 @@ func (b *Briefcase) Add(rs []Report) {
 			b.Reports[r.CrowdID(b.crowdIDMethod)] = append(reports, r)
 		}
 	}
-	elog.Printf("Added batch consisting of %d reports to briefcase.", len(rs))
 }
