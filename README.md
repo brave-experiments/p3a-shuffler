@@ -42,8 +42,8 @@ The request body contains a JSON-formatted list of P3A measurements, e.g.:
       {
         "channel":"developer",
         "country_code":"US",
-        "metric_hash":"12510422802720156853",
-        "metric_value":0,
+        "metric_name":"Brave.Core.NumberOfExtensions",
+        "metric_value":2,
         "platform":"linux-bc",
         "refcode":"none",
         "version":"1.36.68",
