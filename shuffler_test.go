@@ -19,9 +19,11 @@ func BenchmarkRealWorldData(b *testing.B) {
 	s.Start()
 
 	for n := 0; n < b.N; n++ {
-		if err := parseDir(p3aDataDir, s.inbox); err != nil {
+		reports, err := parseReportsFromDir(p3aDataDir)
+		if err != nil {
 			b.Fatalf("Failed to load P3A reports from directory: %s", err)
 		}
+		s.inbox <- reports
 
 		go func() {
 			for {

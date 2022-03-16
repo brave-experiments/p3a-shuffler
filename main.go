@@ -21,7 +21,7 @@ const (
 	shufflerEndpoint     = "/encrypted-reports"
 	socksProxy           = "127.0.0.1:1080"
 	anonymityThreshold   = 10
-	defaultCrowdIDMethod = methodOriginSHA1
+	defaultCrowdIDMethod = attrsAll
 )
 
 var (
@@ -70,22 +70,24 @@ func deploymentMode() {
 }
 
 func main() {
-	simulate := flag.Bool("simulate", false, "Use simulation mode instead of deployment mode.")
 	dataDir := flag.String("datadir", "", "Directory pointing to local P3A measurements, as stored in the S3 bucket.")
-	threshold := flag.Int("threshold", 10, "K-anonymity threshold.")
-	crowdIDMethod := flag.Int("crowdid", 0, "Crowd ID method.")
-	csvOutput := flag.Bool("csv", false, "Print CSV-formatted output to stdout.")
+	simulate := flag.Bool("simulate", false, "Use simulation mode instead of deployment mode.")
+	attributeCSV := flag.Bool("attrcsv", false, "Print attributes instead of running simulation.")
+	entropy := flag.Bool("entropy", false, "Determine empirical entropy of all P3A attributes.")
 	flag.Parse()
+
+	if (*simulate || *entropy || *attributeCSV) && *dataDir == "" {
+		log.Fatal("Must use -datadir when -simulate, -attrcsv, or -entropy is provided.")
+	}
 
 	// Are we supposed to use simulation mode or deployment mode?  In
 	// simulation mode, we don't take as input actual data; we only operate on
-	// offline data and crunch some numbers.
-	if *simulate {
+	// offline data and produce a CSV.
+	if *simulate || *attributeCSV || *entropy {
 		simulationMode(&simulationConfig{
-			DataDir:            *dataDir,
-			AnonymityThreshold: *threshold,
-			CrowdIDMethod:      *crowdIDMethod,
-			CSVOutput:          *csvOutput,
+			DataDir:      *dataDir,
+			AttributeCSV: *attributeCSV,
+			Entropy:      *entropy,
 		})
 	} else {
 		deploymentMode()
