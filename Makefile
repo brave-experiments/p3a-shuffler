@@ -1,7 +1,8 @@
-.PHONY: all test lint eif shuffler clean
+.PHONY: all test lint eif install clean
 
 enclave_cid = 5
 binary = p3a-shuffler
+godeps = *.go go.mod go.sum
 
 all: test lint $(binary)
 
@@ -26,8 +27,11 @@ eif: image
 	nitro-cli console --enclave-id \
 		$$(nitro-cli describe-enclaves | jq -r "if .[].EnclaveCID == $(enclave_cid) then .[].EnclaveID else \"\" end")
 
-$(binary):
+$(binary): $(godeps)
 	go build -o $(binary) .
+
+install: $(godeps)
+	go install
 
 clean:
 	rm $(binary)
