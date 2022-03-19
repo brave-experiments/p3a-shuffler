@@ -3,20 +3,34 @@ package main
 import (
 	"crypto/sha1"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
 const (
-	attrsAll     = iota // All attributes are used for k-anonymity.
-	attrsNoValue        // All attributes *except* the measurement value.
-	attrsMinimal        // An ideal subset of attributes.
+	attrsAll        = iota // All attributes are used for k-anonymity.
+	attrsRefactored        // Our current set of attributes.
+	attrsMinimal           // A minimal set of attributes.
+	major           = iota
+	minor
+	patch
 )
 
 var (
 	anonymityAttrs = map[int]string{
-		attrsAll:     "All",
-		attrsNoValue: "NoValue",
-		attrsMinimal: "Minimal",
+		attrsAll:        "All",
+		attrsRefactored: "Refactored",
+		attrsMinimal:    "Minimal",
+	}
+	lastVersion = map[string]*version{
+		"nightly":   newVersion("0.0.0"),
+		"release":   newVersion("0.0.0"),
+		"beta":      newVersion("0.0.0"),
+		"canary":    newVersion("0.0.0"),
+		"dev":       newVersion("0.0.0"),
+		"developer": newVersion("0.0.0"),
+		"unknown":   newVersion("0.0.0"),
+		"":          newVersion("0.0.0"),
 	}
 )
 
@@ -110,31 +124,117 @@ func (m P3AMeasurement) OrderHighEntropyFirst(method int) []string {
 			fmt.Sprintf("%d", m.WeekOfSurvey),  // 0.06
 			fmt.Sprintf("%d", m.YearOfSurvey),  // 0.00
 		}
-	case attrsNoValue:
-		return []string{
-			m.MetricName,                       // 0.93 (normalized entropy)
-			fmt.Sprintf("%d", m.WeekOfInstall), // 0.86
-			m.CountryCode,                      // 0.70
-			m.Version,                          // 0.66
-			m.RefCode,                          // 0.62
-			m.Platform,                         // 0.61
-			m.Channel,                          // 0.55
-			fmt.Sprintf("%d", m.YearOfInstall), // 0.42
-			fmt.Sprintf("%d", m.WeekOfSurvey),  // 0.06
-			fmt.Sprintf("%d", m.YearOfSurvey),  // 0.00
-		}
 	case attrsMinimal:
 		return []string{
-			m.MetricName,                       // 0.93
-			m.Channel,                          // 0.55
-			m.Platform,                         // 0.61
-			m.CountryCode,                      // 0.70
-			fmt.Sprintf("%d", m.WeekOfInstall), // 0.86
+			m.MetricName,
+			fmt.Sprintf("%d", m.MetricValue),
+			fmt.Sprintf("%d", m.WeekOfInstall),
+			m.CountryCode,
+			m.Platform,
+			m.Channel,
+			fmt.Sprintf("%t", isRecentVersion(m.Channel, m.Version)),
+		}
+	case attrsRefactored:
+		return []string{
+			m.MetricName,
+			fmt.Sprintf("%d", m.MetricValue),
+			fmt.Sprintf("%d", m.WeekOfInstall),
+			m.CountryCode,
+			m.Platform,
+			m.Channel,
+			fmt.Sprintf("%d", m.YearOfInstall),
+			fmt.Sprintf("%d", m.WeekOfSurvey),
+			fmt.Sprintf("%d", m.YearOfSurvey),
+			fmt.Sprintf("%t", isRecentVersion(m.Channel, m.Version)),
 		}
 	default:
 		elog.Fatalf("Unexpected method for measurement: %d", method)
 		return []string{}
 	}
+}
+
+// version represents a Brave Browser version, which is based on semantic
+// versioning.
+type version struct {
+	major int
+	minor int
+	patch int
+}
+
+// newerThan returns true if the given version is newer than the object's
+// version.
+func (v1 *version) newerThan(v2 *version) bool {
+	if v1.major > v2.major {
+		return true
+	}
+	if v1.major < v2.major {
+		return false
+	}
+	// Major version numbers are identical.
+	if v1.minor > v2.minor {
+		return true
+	}
+	if v1.minor < v2.minor {
+		return false
+	}
+	// Minor version numbers are identical.
+	if v1.patch > v2.patch {
+		return true
+	}
+	return false
+}
+
+// isEqual returns true if the given version is identical to the object's
+// version.
+func (v1 *version) isEqual(v2 *version) bool {
+	return v1.major == v2.major && v1.minor == v2.minor && v1.patch == v2.patch
+}
+
+// newVersion returns a new version for the given version string.
+func newVersion(strVersion string) *version {
+	var err error
+	attrs := strings.Split(strVersion, ".")
+	v := &version{}
+
+	v.major, err = strconv.Atoi(attrs[0])
+	if err != nil {
+		elog.Fatalf("Couldn't convert major version number %s to int.", attrs[0])
+	}
+	v.minor, err = strconv.Atoi(attrs[1])
+	if err != nil {
+		elog.Fatalf("Couldn't convert minor version number %s to int.", attrs[1])
+	}
+	v.patch, err = strconv.Atoi(attrs[2])
+	if err != nil {
+		elog.Fatalf("Couldn't convert patch version number %s to int.", attrs[2])
+	}
+
+	return v
+}
+
+// isRecentVersion returns true if the given version is identical to or newer
+// than the latest version we've seen so far for the given channel.  Note that
+// the function updates the latest versions as it's seeing newer versions.  The
+// fact that we update the latest version as we're going through measurements
+// means that we will have a small number of false positives but that doesn't
+// matter considering that we're processing millions of measurements.
+func isRecentVersion(channel, strVersion string) bool {
+	maybeLastVersion, exists := lastVersion[channel]
+	if !exists {
+		elog.Printf("Got unexpected channel %q.", channel)
+		return false
+	}
+	if strVersion == "" {
+		return false
+	}
+
+	version := newVersion(strVersion)
+	if version.newerThan(maybeLastVersion) {
+		elog.Printf("Updating latest version for %s to %s.", channel, strVersion)
+		lastVersion[channel] = version
+		return true
+	}
+	return version.isEqual(maybeLastVersion)
 }
 
 // OrderHighEntropyLast returns the reverse ordering of OrderHighEntropyFirst.
