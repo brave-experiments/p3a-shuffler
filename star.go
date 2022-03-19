@@ -66,7 +66,8 @@ func (s *NestedSTAR) Aggregate(method int, numAttrs int) {
 		if !exists {
 			num = 0
 		}
-		fmt.Printf("LenPartMsmt,%d,%d,0,0,0,%d,%d\n",
+		fmt.Printf("LenPartMsmt%s,%d,%d,0,0,0,%d,%d\n",
+			anonymityAttrs[method],
 			s.order,
 			s.threshold,
 			key,
