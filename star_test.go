@@ -77,3 +77,23 @@ func TestAggregate(t *testing.T) {
 		t.Fatalf("expected %v but got %v.", expectedLens, state.LenPartialMsmts)
 	}
 }
+
+func TestAggregationState(t *testing.T) {
+	s1 := NewAggregationState()
+	s2 := NewAggregationState()
+
+	if s1.AnythingUnlocked() {
+		t.Fatal("expected no measurements to be unlocked for empty state")
+	}
+
+	s1.AddLenTags(0, 10)
+	s1.AddLenTags(1, 5)
+	s2.AddLenTags(1, 15)
+	s1.Augment(s2)
+	if s1.LenPartialMsmts[0] != 10 {
+		t.Fatalf("expected 10 but got %d", s1.LenPartialMsmts[0])
+	}
+	if s1.LenPartialMsmts[1] != 20 {
+		t.Fatalf("expected 20 but got %d", s1.LenPartialMsmts[0])
+	}
+}
