@@ -7,7 +7,12 @@ godeps = *.go go.mod go.sum
 all: test lint $(binary)
 
 test:
-	go test -cover ./...
+	@go test -cover ./...
+
+covertest:
+	@go test -coverprofile=cover.out .
+	@go tool cover -html=cover.out
+	@rm cover.out
 
 lint:
 	golangci-lint run -E gofmt -E revive --exclude-use-default=false
