@@ -72,12 +72,6 @@ func (s *NestedSTAR) Aggregate(method int, numAttrs int) {
 			key,
 			num)
 	}
-	fmt.Printf("Nested STAR,%d,%d,%.3f,%d,%d,0,0\n",
-		s.order,
-		s.threshold,
-		frac(state.FullMsmts, s.numMeasurements),
-		s.root.NumTags(),
-		s.root.NumLeafTags())
 	fmt.Printf("Partial%s,%d,%d,%.3f,%d,%d,0,0\n",
 		anonymityAttrs[method],
 		s.order,
