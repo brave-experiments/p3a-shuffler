@@ -21,7 +21,6 @@ type NestedSTAR struct {
 	threshold       int
 	order           int
 	numMeasurements int
-	partialDist     bool
 }
 
 // NewNestedSTAR returns a new NestedSTAR object.
@@ -129,11 +128,6 @@ func NewAggregationState() *AggregationState {
 func (n *Node) Aggregate(maxTags, threshold int, m []string) *AggregationState {
 	state := NewAggregationState()
 
-	keys := []string{}
-	for k := range n.ValueToInfo {
-		keys = append(keys, k)
-	}
-
 	// Iterate over all values where we are in the tree, e.g., "US", "FR", ...
 	for value, info := range n.ValueToInfo {
 		// We don't meet our k-anonymity threshold for the given value.
@@ -188,7 +182,7 @@ func (n *Node) Add(orderedMsmt []string) {
 }
 
 func (n *Node) NumTags() int {
-	var num int = len(n.ValueToInfo)
+	var num = len(n.ValueToInfo)
 
 	for _, info := range n.ValueToInfo {
 		if info.Next != nil {
@@ -199,7 +193,7 @@ func (n *Node) NumTags() int {
 }
 
 func (n *Node) NumNodes() int {
-	var num int = 1
+	var num = 1
 
 	for _, info := range n.ValueToInfo {
 		if info.Next != nil {
