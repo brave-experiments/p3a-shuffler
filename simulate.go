@@ -237,7 +237,7 @@ func simulationMode(cfg *simulationConfig) {
 	fmt.Println("method,order,threshold,reports,num_tags,num_leaf_tags,len_part_msmts,num_part_msmts")
 
 	// Iterate over our desired k-anonymity thresholds.
-	thresholds := []int{5, 10, 20, 40, 80, 160, 320}
+	thresholds := []int{5, 10, 25, 50, 75, 100}
 	for _, k := range thresholds {
 		cfg.AnonymityThreshold = k
 
