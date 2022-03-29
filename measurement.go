@@ -11,9 +11,6 @@ const (
 	attrsAll        = iota // All attributes are used for k-anonymity.
 	attrsRefactored        // Our current set of attributes.
 	attrsMinimal           // A minimal set of attributes.
-	major           = iota
-	minor
-	patch
 )
 
 var (
@@ -104,6 +101,17 @@ func (m P3AMeasurement) String() string {
 		m.CountryCode, m.Platform, m.Version,
 		m.Channel, m.RefCode)
 }
+
+//func sampleDerivedMeasurement() *P3AMeasurement {
+// Take an existing measurement, so the joint distribution of year, week,
+// etc. is realistic.
+
+// combine two metric names; perhaps the given one with a small set of
+// pre-defined metric names?
+
+// combining two boolean metric names with AND is straightforward.
+// ["add" ["NumOpenBrowserTabs"
+//}
 
 // OrderHighEntropyFirst turns the measurement into a a slice of strings,
 // ordered by entropy, with high-entropy attributes coming first.  The argument
