@@ -232,6 +232,7 @@ func simulationMode(cfg *simulationConfig) {
 		empiricalEntropyByField(reports)
 		return
 	}
+	cfg.Order = orderHighEntropyLast
 
 	fmt.Println("method,order,threshold,reports,num_tags,num_leaf_tags,len_part_msmts,num_part_msmts")
 
@@ -244,11 +245,7 @@ func simulationMode(cfg *simulationConfig) {
 			elog.Printf("Running simulation for k=%d, method=%s", k, name)
 			cfg.CrowdIDMethod = method
 			simulateShuffler(cfg, reports)
-			// For Nested STAR, use our two measurement orderings.
-			for j := 0; j <= 1; j++ {
-				cfg.Order = j
-				simulateSTAR(cfg, reports)
-			}
+			simulateSTAR(cfg, reports)
 		}
 	}
 }
