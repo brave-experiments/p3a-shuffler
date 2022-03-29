@@ -47,9 +47,20 @@ func TestOrdering(t *testing.T) {
 	}
 
 	for i := range hef {
-		if hef[i] != hel[len(hel)-1-i] {
-			t.Fatalf("HEF and HEL ordering don't match.")
+		if i < 2 {
+			continue
 		}
+		j := len(hel) + 1 - i
+		if hef[i] != hel[j] {
+			t.Fatalf("HEF and HEL ordering don't match at i=%d, j=%d.", i, j)
+		}
+	}
+
+	if hef[0] != hel[0] {
+		t.Fatal("HEF and HEL don't have a shared metric name.")
+	}
+	if hef[1] != hel[1] {
+		t.Fatal("HEF and HEL don't have a shared metric value.")
 	}
 }
 

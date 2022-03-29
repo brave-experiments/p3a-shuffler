@@ -153,6 +153,18 @@ func (m P3AMeasurement) OrderHighEntropyFirst(method int) []string {
 	}
 }
 
+// OrderHighEntropyLast returns the reverse ordering of OrderHighEntropyFirst.
+func (m P3AMeasurement) OrderHighEntropyLast(method int) []string {
+	orig := m.OrderHighEntropyFirst(method)
+	reversed := []string{}
+	reversed = append(reversed, m.MetricName)
+	reversed = append(reversed, fmt.Sprintf("%d", m.MetricValue))
+	for i := len(orig) - 1; i >= 2; i-- {
+		reversed = append(reversed, orig[i])
+	}
+	return reversed
+}
+
 // version represents a Brave Browser version, which is based on semantic
 // versioning.
 type version struct {
@@ -235,16 +247,6 @@ func isRecentVersion(channel, strVersion string) bool {
 		return true
 	}
 	return version.isEqual(maybeLastVersion)
-}
-
-// OrderHighEntropyLast returns the reverse ordering of OrderHighEntropyFirst.
-func (m P3AMeasurement) OrderHighEntropyLast(method int) []string {
-	orig := m.OrderHighEntropyFirst(method)
-	reversed := []string{}
-	for i := len(orig) - 1; i >= 0; i-- {
-		reversed = append(reversed, orig[i])
-	}
-	return reversed
 }
 
 // CSVHeader returns the header for a CSV-formatted file that contains P3A
