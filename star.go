@@ -72,6 +72,15 @@ func (s *NestedSTAR) Aggregate(method int, numAttrs int) {
 			key,
 			num)
 	}
+	fracFull := frac(state.FullMsmts, s.numMeasurements) * 100
+	fracPart := frac(state.PartialMsmts, s.numMeasurements) * 100
+	elog.Printf("%d (%.1f%%) full, %d (%.1f%%) partial out of %d; %.1f%% lost\n",
+		state.FullMsmts,
+		fracFull,
+		state.PartialMsmts,
+		fracPart,
+		s.numMeasurements,
+		100-fracFull-fracPart)
 	fmt.Printf("Partial%s,%d,%d,%.3f,%d,%d,0,0\n",
 		anonymityAttrs[method],
 		s.order,
@@ -98,6 +107,10 @@ type AggregationState struct {
 	LenPartialMsmts map[int]int
 }
 
+func (s *AggregationState) String() string {
+	return fmt.Sprintf("%d full, %d partial msmts.", s.FullMsmts, s.PartialMsmts)
+}
+
 func (s *AggregationState) AddLenTags(key, value int) {
 	num, exists := s.LenPartialMsmts[key]
 	if !exists {
@@ -115,8 +128,8 @@ func (s *AggregationState) Augment(s2 *AggregationState) {
 	}
 }
 
-func (s *AggregationState) AnythingUnlocked() bool {
-	return s.FullMsmts > 0 || s.PartialMsmts > 0
+func (s *AggregationState) NothingUnlocked() bool {
+	return s.FullMsmts == 0 && s.PartialMsmts == 0
 }
 
 func NewAggregationState() *AggregationState {
@@ -150,11 +163,8 @@ func (n *Node) Aggregate(maxTags, threshold int, m []string) *AggregationState {
 			// Go deeper down the tree, and try to unlock our next tag.
 			subState := info.Next.Aggregate(maxTags, threshold, append(m, value))
 			state.Augment(subState)
-
-			if !subState.AnythingUnlocked() {
-				state.PartialMsmts += info.Num
-				state.AddLenTags(len(m)+1, info.Num)
-			}
+			state.PartialMsmts = info.Num - subState.FullMsmts
+			state.AddLenTags(len(m)+1, state.PartialMsmts-subState.PartialMsmts)
 		}
 	}
 
