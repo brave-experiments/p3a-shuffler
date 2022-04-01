@@ -49,6 +49,9 @@ func initSTAR() (*NestedSTAR, int, int) {
 func TestRealSTAR(t *testing.T) {
 	star, maxTags, threshold := initSTAR()
 	state := star.root.Aggregate(maxTags, threshold, []string{})
+	if !state.AddsUp() {
+		t.Fatal("number of partial measurements don't add up")
+	}
 
 	expectedFull, expectedPartial := 6, 10
 	if state.FullMsmts != expectedFull {
@@ -110,10 +113,6 @@ func TestNumLeafs(t *testing.T) {
 func TestAggregationState(t *testing.T) {
 	s1 := NewAggregationState()
 	s2 := NewAggregationState()
-
-	if !s1.NothingUnlocked() {
-		t.Fatal("expected no measurements to be unlocked for empty state")
-	}
 
 	s1.AddLenTags(0, 10)
 	s1.AddLenTags(1, 5)

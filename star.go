@@ -8,6 +8,7 @@ import (
 const (
 	orderHighEntropyFirst = iota
 	orderHighEntropyLast
+	rootDepth = 1
 )
 
 // NestedSTAR simulates the execution of Nested STAR over P3A measurements.
@@ -60,6 +61,9 @@ func frac(a, b int) float64 {
 // number of attributes.
 func (s *NestedSTAR) Aggregate(method int, numAttrs int) {
 	state := s.root.Aggregate(numAttrs, s.threshold, []string{})
+	if !state.AddsUp() {
+		elog.Printf("Number of partial measurements don't add up.")
+	}
 	for key := 1; key <= numAttrs; key++ {
 		num, exists := state.LenPartialMsmts[key]
 		if !exists {
@@ -104,8 +108,14 @@ type Node struct {
 type AggregationState struct {
 	FullMsmts       int
 	PartialMsmts    int
+	AlreadyCounted  int
 	LenPartialMsmts map[int]int
-	DNR             int
+}
+
+func NewAggregationState() *AggregationState {
+	return &AggregationState{
+		LenPartialMsmts: make(map[int]int),
+	}
 }
 
 func (s *AggregationState) String() string {
@@ -124,24 +134,26 @@ func (s *AggregationState) AddLenTags(key, value int) {
 func (s *AggregationState) Augment(s2 *AggregationState) {
 	s.FullMsmts += s2.FullMsmts
 	s.PartialMsmts += s2.PartialMsmts
-	s.DNR += s2.DNR
+	s.AlreadyCounted += s2.AlreadyCounted
 	for key, value := range s2.LenPartialMsmts {
 		s.AddLenTags(key, value)
 	}
 }
 
-func (s *AggregationState) NothingUnlocked() bool {
-	return s.FullMsmts == 0 && s.PartialMsmts == 0
-}
-
-func NewAggregationState() *AggregationState {
-	return &AggregationState{
-		LenPartialMsmts: make(map[int]int),
+// AddsUp returns true if the number n-length partial measurements adds up to
+// the total number of partial measurements.  The purpose of this function is
+// to ensure algorithmic correctness.
+func (s *AggregationState) AddsUp() bool {
+	totalPartial := 0
+	for _, num := range s.LenPartialMsmts {
+		totalPartial += num
 	}
+	return s.PartialMsmts == totalPartial
 }
 
-func (n *Node) Aggregate(maxTags, threshold int, m []string) *AggregationState {
+func (n *Node) Aggregate(maxDepth, threshold int, m []string) *AggregationState {
 	state := NewAggregationState()
+	depth := len(m) + 1
 
 	// Iterate over all values where we are in the tree, e.g., "US", "FR", ...
 	for value, info := range n.ValueToInfo {
@@ -151,27 +163,26 @@ func (n *Node) Aggregate(maxTags, threshold int, m []string) *AggregationState {
 		}
 
 		// We've reached the last tag, i.e., we fully unlocked a measurement.
-		if len(m)+1 == maxTags {
+		if depth == maxDepth {
 			state.FullMsmts += info.Num
 			continue
 		}
-
 		if info.Next == nil {
-			// This branch is only entered if we're dealing with incomplete
-			// measurements.
-			state.PartialMsmts += info.Num
-			state.AddLenTags(len(m)+1, info.Num)
-			elog.Printf("Incomplete measurement: %s\n", m)
+			elog.Printf("ERROR: Encountered incomplete measurement: %s\n", m)
+			continue
 		}
+
 		// Go deeper down the tree, and try to unlock our next tag.
-		subState := info.Next.Aggregate(maxTags, threshold, append(m, value))
+		subState := info.Next.Aggregate(maxDepth, threshold, append(m, value))
 		state.Augment(subState)
 
-		state.AddLenTags(len(m)+1, info.Num-subState.FullMsmts-subState.DNR)
-		state.DNR += info.Num - subState.FullMsmts
+		numNewlyUnlocked := info.Num - subState.FullMsmts - subState.AlreadyCounted
+		state.AddLenTags(depth, numNewlyUnlocked)
+		state.AlreadyCounted += numNewlyUnlocked
 
-		// only do this for root node
-		if len(m) == 0 {
+		// Once we're back at our root node, determine the total number of
+		// partial measurements.
+		if depth == rootDepth {
 			state.PartialMsmts += info.Num - subState.FullMsmts
 		}
 	}
