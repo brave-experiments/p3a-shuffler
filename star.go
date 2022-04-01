@@ -105,6 +105,7 @@ type AggregationState struct {
 	FullMsmts       int
 	PartialMsmts    int
 	LenPartialMsmts map[int]int
+	DNR             int
 }
 
 func (s *AggregationState) String() string {
@@ -123,6 +124,7 @@ func (s *AggregationState) AddLenTags(key, value int) {
 func (s *AggregationState) Augment(s2 *AggregationState) {
 	s.FullMsmts += s2.FullMsmts
 	s.PartialMsmts += s2.PartialMsmts
+	s.DNR += s2.DNR
 	for key, value := range s2.LenPartialMsmts {
 		s.AddLenTags(key, value)
 	}
@@ -159,12 +161,18 @@ func (n *Node) Aggregate(maxTags, threshold int, m []string) *AggregationState {
 			// measurements.
 			state.PartialMsmts += info.Num
 			state.AddLenTags(len(m)+1, info.Num)
-		} else {
-			// Go deeper down the tree, and try to unlock our next tag.
-			subState := info.Next.Aggregate(maxTags, threshold, append(m, value))
-			state.Augment(subState)
-			state.PartialMsmts = info.Num - subState.FullMsmts
-			state.AddLenTags(len(m)+1, state.PartialMsmts-subState.PartialMsmts)
+			elog.Printf("Incomplete measurement: %s\n", m)
+		}
+		// Go deeper down the tree, and try to unlock our next tag.
+		subState := info.Next.Aggregate(maxTags, threshold, append(m, value))
+		state.Augment(subState)
+
+		state.AddLenTags(len(m)+1, info.Num-subState.FullMsmts-subState.DNR)
+		state.DNR += info.Num - subState.FullMsmts
+
+		// only do this for root node
+		if len(m) == 0 {
+			state.PartialMsmts += info.Num - subState.FullMsmts
 		}
 	}
 

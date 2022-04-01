@@ -20,22 +20,28 @@ func initSTAR() (*NestedSTAR, int, int) {
 	star := NewNestedSTAR(&simulationConfig{})
 
 	maxTags, threshold := 3, 5
-	// A few full measurements that meet our k=5 threshold.
+	// Six full measurements.
 	star.root.Add([]string{"US", "release", "windows"})
 	star.root.Add([]string{"US", "release", "windows"})
 	star.root.Add([]string{"US", "release", "windows"})
 	star.root.Add([]string{"US", "release", "windows"})
 	star.root.Add([]string{"US", "release", "windows"})
-	// Two partial measurements (consisting of ["US", "release"] that don't
-	// meet k=5.
+	star.root.Add([]string{"US", "release", "windows"})
+	// Three partial measurements of length two, containing ["US", "release"].
 	star.root.Add([]string{"US", "release", "linux"})
 	star.root.Add([]string{"US", "release", "linux"})
 	star.root.Add([]string{"US", "release", "macos"})
-	// Two partial measurements (consisting of ["US"]).
+	// Two partial measurements of length one, containing ["US"].
 	star.root.Add([]string{"US", "nightly", "windows"})
 	star.root.Add([]string{"US", "beta", "windows"})
-	// One lost measurement.
+	// Five partial measurements of length one, containing ["CA"].
 	star.root.Add([]string{"CA", "release", "windows"})
+	star.root.Add([]string{"CA", "release", "windows"})
+	star.root.Add([]string{"CA", "release", "windows"})
+	star.root.Add([]string{"CA", "release", "windows"})
+	star.root.Add([]string{"CA", "nightly", "windows"})
+	// One discarded measurement.
+	star.root.Add([]string{"MX", "release", "windows"})
 
 	return star, maxTags, threshold
 }
@@ -44,7 +50,7 @@ func TestRealSTAR(t *testing.T) {
 	star, maxTags, threshold := initSTAR()
 	state := star.root.Aggregate(maxTags, threshold, []string{})
 
-	expectedFull, expectedPartial := 5, 5
+	expectedFull, expectedPartial := 6, 10
 	if state.FullMsmts != expectedFull {
 		t.Fatalf("expected %d but got %d full measurements.", expectedFull, state.FullMsmts)
 	}
@@ -53,8 +59,8 @@ func TestRealSTAR(t *testing.T) {
 	}
 
 	expectedLens := map[int]int{
-		1: 2,
 		2: 3,
+		1: 7,
 	}
 	if !isMapEqual(state.LenPartialMsmts, expectedLens) {
 		t.Fatalf("expected %v but got %v.", expectedLens, state.LenPartialMsmts)
@@ -83,19 +89,19 @@ func TestNumLeafs(t *testing.T) {
 	star, _, _ := initSTAR()
 
 	n = star.root.NumNodes()
-	expected = 7
+	expected = 10
 	if n != expected {
 		t.Fatalf("expected %d but got %d nodes in tree.", expected, n)
 	}
 
 	n = star.root.NumTags()
-	expected = 12
+	expected = 17
 	if n != expected {
 		t.Fatalf("expected %d but got %d tags in tree.", expected, n)
 	}
 
 	n = star.root.NumLeafTags()
-	expected = 6
+	expected = 8
 	if n != expected {
 		t.Fatalf("expected %d but got %d leaf tags in tree.", expected, n)
 	}
