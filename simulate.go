@@ -232,7 +232,7 @@ func simulationMode(cfg *simulationConfig) {
 		empiricalEntropyByField(reports)
 		return
 	}
-	cfg.Order = orderHighEntropyLast
+	cfg.Order = orderHighEntropyFirst
 
 	fmt.Println("method,order,threshold,reports,num_tags,num_leaf_tags,len_part_msmts,num_part_msmts")
 
