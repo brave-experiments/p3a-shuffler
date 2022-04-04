@@ -120,16 +120,18 @@ func (m P3AMeasurement) OrderHighEntropyFirst(method int) []string {
 	switch method {
 	case attrsAll:
 		return []string{
-			m.MetricName,                       // 0.93
-			fmt.Sprintf("%d", m.MetricValue),   // 0.64
-			fmt.Sprintf("%d", m.WeekOfInstall), // 0.86
-			m.CountryCode,                      // 0.70
-			m.Version,                          // 0.66
-			m.RefCode,                          // 0.62
-			m.Platform,                         // 0.61
-			m.Channel,                          // 0.55
-			fmt.Sprintf("%d", m.YearOfInstall), // 0.42
-			fmt.Sprintf("%d", m.WeekOfSurvey),  // 0.06
+			// The following entropy numbers came from running:
+			// p3a-shuffler -simulate -datadir 2022-03-27 -entropy
+			m.MetricName,                       // 0.90
+			fmt.Sprintf("%d", m.MetricValue),   // 0.66
+			fmt.Sprintf("%d", m.WeekOfInstall), // 0.93
+			m.CountryCode,                      // 0.72
+			m.Platform,                         // 0.57
+			fmt.Sprintf("%d", m.YearOfInstall), // 0.40
+			m.Version,                          // 0.25
+			m.RefCode,                          // 0.17
+			fmt.Sprintf("%d", m.WeekOfSurvey),  // 0.15
+			m.Channel,                          // 0.03
 			fmt.Sprintf("%d", m.YearOfSurvey),  // 0.00
 		}
 	case attrsMinimal:
