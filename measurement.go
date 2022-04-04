@@ -102,17 +102,6 @@ func (m P3AMeasurement) String() string {
 		m.Channel, m.RefCode)
 }
 
-//func sampleDerivedMeasurement() *P3AMeasurement {
-// Take an existing measurement, so the joint distribution of year, week,
-// etc. is realistic.
-
-// combine two metric names; perhaps the given one with a small set of
-// pre-defined metric names?
-
-// combining two boolean metric names with AND is straightforward.
-// ["add" ["NumOpenBrowserTabs"
-//}
-
 // OrderHighEntropyFirst turns the measurement into a a slice of strings,
 // ordered by entropy, with high-entropy attributes coming first.  The argument
 // 'method' determines what attributes are returned.
