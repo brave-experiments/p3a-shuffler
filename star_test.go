@@ -2,20 +2,6 @@ package main
 
 import "testing"
 
-func initFakeSTAR() *NestedSTAR {
-	star := NewNestedSTAR(&simulationConfig{})
-
-	star.root.Add([]string{"baz"})
-	star.root.Add([]string{"bar"})
-	star.root.Add([]string{"foo", "bar"})
-	star.root.Add([]string{"foo", "baz"})
-	star.root.Add([]string{"foo", "bar", "baz"})
-	star.root.Add([]string{"qux", "foo", "bar", "qux"})
-	star.root.Add([]string{"qux", "foo", "bar", "bar"})
-
-	return star
-}
-
 func initSTAR() (*NestedSTAR, int, int) {
 	star := NewNestedSTAR(&simulationConfig{})
 
@@ -46,7 +32,7 @@ func initSTAR() (*NestedSTAR, int, int) {
 	return star, maxTags, threshold
 }
 
-func TestRealSTAR(t *testing.T) {
+func TestSTAR(t *testing.T) {
 	star, maxTags, threshold := initSTAR()
 	state := star.root.Aggregate(maxTags, threshold, []string{})
 	if !state.AddsUp() {
