@@ -92,6 +92,11 @@ func (s *NestedSTAR) Aggregate(method int, numAttrs int) {
 		frac(state.PartialMsmts, s.numMeasurements),
 		s.root.NumTags(),
 		s.root.NumLeafTags())
+	fmt.Printf("%s,%d,%d,%.3f,0,0,0,0\n",
+		anonymityAttrs[method],
+		s.order,
+		s.threshold,
+		frac(state.FullMsmts, s.numMeasurements))
 }
 
 type NodeInfo struct {
