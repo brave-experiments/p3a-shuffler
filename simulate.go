@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 )
 
 var (
@@ -22,6 +23,14 @@ type simulationConfig struct {
 	Order              int
 	AttributeCSV       bool
 	Entropy            bool
+}
+
+// String implements the Stringer interface.
+func (c simulationConfig) String() string {
+	return fmt.Sprintf("k=%d, method=%s, order=%d",
+		c.AnonymityThreshold,
+		anonymityAttrs[c.CrowdIDMethod],
+		c.Order)
 }
 
 // parseJSONFile reads and parses a P3A measurement file as it can be found in
@@ -69,7 +78,7 @@ func parseJSONFile(filename string) ([]Report, error) {
 
 // empiricalEntropyByField determines the empirical entropy per measurement
 // attribute.
-func empiricalEntropyByField(rs []Report) {
+func empiricalEntropyByField(cfg *simulationConfig) {
 	yos := make(map[string]int)
 	yoi := make(map[string]int)
 	wos := make(map[string]int)
@@ -82,7 +91,12 @@ func empiricalEntropyByField(rs []Report) {
 	channel := make(map[string]int)
 	refcode := make(map[string]int)
 
-	for _, r := range rs {
+	reports, err := parseReportsFromDir(cfg.DataDir)
+	if err != nil {
+		elog.Fatalf("Failed to read reports from directory: %s", err)
+	}
+
+	for _, r := range reports {
 		m := r.(P3AMeasurement)
 		incKey(fmt.Sprintf("%d", m.YearOfInstall), yoi)
 		incKey(fmt.Sprintf("%d", m.YearOfSurvey), yos)
@@ -141,39 +155,6 @@ func incKey(key string, m map[string]int) {
 	}
 }
 
-func simulateShuffler(cfg *simulationConfig, reports []Report) {
-	var origReports int
-
-	s := NewShuffler(batchPeriod, cfg.AnonymityThreshold, cfg.CrowdIDMethod)
-	s.Start()
-	s.inbox <- reports
-
-	elog.Printf("Before batch period: %s\n", s)
-	origReports = s.briefcase.NumReports()
-
-	elog.Printf("Ending batch period using anonymity threshold of %d.", cfg.AnonymityThreshold)
-	s.briefcase.DumpFewerThan(s.anonymityThreshold)
-	elog.Printf("After batch period: %s\n", s)
-
-	fmt.Printf("%s,%d,%d,%.3f,0,0,0,0\n",
-		anonymityAttrs[cfg.CrowdIDMethod],
-		cfg.Order,
-		cfg.AnonymityThreshold,
-		frac(s.briefcase.NumReports(),
-			origReports))
-}
-
-func simulateSTAR(cfg *simulationConfig, reports []Report) {
-	s := NewNestedSTAR(cfg)
-
-	numAttrs := len(P3AMeasurement{}.OrderHighEntropyFirst(cfg.CrowdIDMethod))
-
-	s.AddReports(cfg.CrowdIDMethod, reports)
-	elog.Printf("Aggregating %d measurements using k=%d, method=%d, attrs=%d.",
-		s.numMeasurements, cfg.AnonymityThreshold, cfg.CrowdIDMethod, numAttrs)
-	s.Aggregate(cfg.CrowdIDMethod, numAttrs)
-}
-
 // parseReportsFromDir parses and returns all P3A measurements from the files
 // that can be found in the given directory (and subdirectories).
 func parseReportsFromDir(dir string) ([]Report, error) {
@@ -205,9 +186,44 @@ func parseReportsFromDir(dir string) ([]Report, error) {
 	return reports, nil
 }
 
-func attributeCSV(cfg *simulationConfig, reports []Report) {
+func streamReportsFromDir(dir string, rChan chan []Report) {
+	var numFiles int
+	defer func() {
+		elog.Printf("Parsed %d JSON files; done reading reports from %s.", numFiles, dir)
+		close(rChan)
+	}()
+
+	elog.Printf("Starting to walk over directory %s.", dir)
+	err := filepath.Walk(dir,
+		func(filename string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if info.IsDir() {
+				return nil
+			}
+			numFiles++
+			rs, err := parseJSONFile(filename)
+			if err != nil {
+				elog.Printf("Failed to parse %s because: %s", filename, err)
+			}
+			rChan <- rs
+			return nil
+		})
+	if err != nil {
+		elog.Printf("Failed to walk: %s", err)
+	}
+}
+
+func attributeCSV(cfg *simulationConfig) {
 	elog.Println("Printing per-attribute CSVs.")
 	fmt.Println(P3AMeasurement{}.CSVHeader())
+
+	reports, err := parseReportsFromDir(cfg.DataDir)
+	if err != nil {
+		elog.Fatalf("Failed to read reports from directory: %s", err)
+	}
+
 	for i, r := range reports {
 		if i%1000 == 0 {
 			elog.Printf("Processed %d measurements.", i)
@@ -216,36 +232,51 @@ func attributeCSV(cfg *simulationConfig, reports []Report) {
 	}
 }
 
-func simulationMode(cfg *simulationConfig) {
-	elog.Printf("Starting to read reports from %s.", cfg.DataDir)
-	reports, err := parseReportsFromDir(cfg.DataDir)
-	if err != nil {
-		elog.Fatalf("Failed to parse measurements: %s", err)
+func runSTAR(cfg *simulationConfig, rStream chan []Report, wg *sync.WaitGroup) {
+	defer wg.Done()
+	s := NewNestedSTAR(cfg)
+	for rs := range rStream {
+		s.AddReports(cfg.CrowdIDMethod, rs)
 	}
-	elog.Printf("Read %d P3A measurements from disk.", len(reports))
 
+	elog.Printf("Aggregating %d measurements with %s.", s.numMeasurements, cfg)
+	numAttrs := len(P3AMeasurement{}.OrderHighEntropyFirst(cfg.CrowdIDMethod))
+	s.Aggregate(cfg.CrowdIDMethod, numAttrs)
+}
+
+func simulationMode(cfg *simulationConfig) {
 	if cfg.AttributeCSV {
-		attributeCSV(cfg, reports)
+		attributeCSV(cfg)
 		return
 	}
 	if cfg.Entropy {
-		empiricalEntropyByField(reports)
+		empiricalEntropyByField(cfg)
 		return
 	}
-	cfg.Order = orderHighEntropyFirst
 
 	fmt.Println("method,order,threshold,reports,num_tags,num_leaf_tags,len_part_msmts,num_part_msmts")
-
+	mux := newMultiplexer()
+	var wg sync.WaitGroup
 	// Iterate over our desired k-anonymity thresholds.
 	thresholds := []int{5, 10, 25, 50, 75, 100}
 	for _, k := range thresholds {
-		cfg.AnonymityThreshold = k
+		for method := range anonymityAttrs {
+			newCfg := *cfg
+			newCfg.AnonymityThreshold = k
+			newCfg.Order = orderHighEntropyLast
+			newCfg.CrowdIDMethod = method
+			elog.Printf("Preparing simulation with %s.", newCfg)
 
-		for method, name := range anonymityAttrs {
-			elog.Printf("Running simulation for k=%d, method=%s", k, name)
-			cfg.CrowdIDMethod = method
-			simulateShuffler(cfg, reports)
-			simulateSTAR(cfg, reports)
+			rChan := make(chan []Report)
+			mux.register(rChan)
+			wg.Add(1)
+			go runSTAR(&newCfg, rChan, &wg)
 		}
 	}
+	mux.start()
+	streamReportsFromDir(cfg.DataDir, mux.origChan)
+
+	// Wait until all of our Nested STAR instances are done aggregating.
+	wg.Wait()
+	elog.Println("All simulations have finished.  Exiting.")
 }
