@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 const (
@@ -29,6 +30,7 @@ var (
 		"unknown":   newVersion("0.0.0"),
 		"":          newVersion("0.0.0"),
 	}
+	lastVersionLock sync.Mutex
 )
 
 // ShufflerMeasurement represents an encrypted measurement for the shuffler.
@@ -230,6 +232,8 @@ func newVersion(strVersion string) *version {
 // means that we will have a small number of false positives but that doesn't
 // matter considering that we're processing millions of measurements.
 func isRecentVersion(channel, strVersion string) bool {
+	lastVersionLock.Lock()
+	defer lastVersionLock.Unlock()
 	maybeLastVersion, exists := lastVersion[channel]
 	if !exists {
 		elog.Printf("Got unexpected channel %q.", channel)
