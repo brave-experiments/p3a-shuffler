@@ -3,23 +3,21 @@ package main
 import (
 	"flag"
 	"log"
-	"net"
 	"net/http"
 	"os"
 	"time"
 
 	// This module must be imported first because of its side effects of
 	// seeding our system entropy pool.
-	_ "github.com/brave-experiments/nitro-enclave-utils/randseed"
+	_ "github.com/brave-experiments/nitriding/randseed"
 
-	nitro "github.com/brave-experiments/nitro-enclave-utils"
+	"github.com/brave-experiments/nitriding"
 )
 
 const (
 	analyzerURL          = "https://example.com"
 	p3aEndpoint          = "/reports"
 	shufflerEndpoint     = "/encrypted-reports"
-	socksProxy           = "127.0.0.1:1080"
 	anonymityThreshold   = 10
 	defaultCrowdIDMethod = attrsAll
 )
@@ -40,21 +38,8 @@ func deploymentMode() {
 	defer forwarder.Stop()
 	elog.Println("Started forwarder.")
 
-	proxyAddr, err := net.ResolveTCPAddr("tcp", socksProxy)
-	if err != nil {
-		elog.Fatalf("Failed to resolve TCP address for %s: %s", socksProxy, err)
-	}
-	vproxy, err := nitro.NewVProxy(proxyAddr, uint32(1080))
-	if err != nil {
-		elog.Fatalf("Failed to create VProxy: %s", err)
-	}
-	ready := make(chan bool)
-	go vproxy.Start(ready)
-	<-ready
-	elog.Println("Started VProxy.")
-
-	enclave := nitro.NewEnclave(
-		&nitro.Config{
+	enclave := nitriding.NewEnclave(
+		&nitriding.Config{
 			SOCKSProxy: "socks5://127.0.0.1:1080",
 			FQDN:       "nitro.nymity.ch",
 			Port:       8080,
